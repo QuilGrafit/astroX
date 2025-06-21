@@ -80,7 +80,6 @@ dp = Dispatcher(storage=storage)
 
 # --- Ваша функция cron_job_handler (обязательно должна быть определена) ---
 async def cron_job_handler(request: web.Request):
-    # Проверяем секретный ключ
     CRON_SECRET_KEY = os.getenv("CRON_SECRET_KEY")
     if not CRON_SECRET_KEY:
         logger.error("CRON_SECRET_KEY не установлен. Доступ к cron_job_handler запрещен.")
@@ -97,31 +96,13 @@ async def cron_job_handler(request: web.Request):
         return web.Response(status=403, text="Forbidden: Invalid secret key.")
 
     logger.info("Cron job handler triggered!")
-    # Здесь должна быть логика вашей ежедневной рассылки гороскопов
-    # Например:
-    # await send_daily_horoscopes_to_all_users(bot, users_collection)
-    logger.info("Daily horoscope sending logic should be here.")
+    # TODO: Здесь должна быть логика вашей ежедневной рассылки гороскопов
+    # Пример: await send_daily_horoscopes_to_all_users(bot, users_collection)
     return web.Response(text="Cron job executed successfully!")
 
 
-# --- Функции on_startup и on_shutdown ---
-async def on_startup(passed_bot: Bot) -> None:
-    logger.info("Инициализация...")
-    if WEBHOOK_URL:
-        # Устанавливаем вебхук в Telegram
-        await passed_bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
-        logger.info(f"Вебхук установлен на: {WEBHOOK_URL}")
-    else:
-        logger.warning("WEBHOOK_HOST не установлен. Вебхук не будет настроен. Бот будет работать в режиме long-polling.")
-
-async def on_shutdown(passed_bot: Bot) -> None:
-    if mongo_client:
-        mongo_client.close()
-        logger.info("MongoDB соединение закрыто.")
-
-# --- Ваша исправленная функция main() ---
 async def main():
-    await on_startup(bot)
+    await on_startup(bot) # Это должен установить вебхук в Telegram
 
     # Регистрируем on_shutdown для корректного закрытия соединений
     dp.shutdown.register(on_shutdown)
@@ -132,15 +113,17 @@ async def main():
 
         web_app = web.Application()
 
-        # Правильная настройка вебхука для aiogram 3.x
+        # --- Правильная настройка вебхука для aiogram 3.x ---
         webhook_requests_handler = SimpleRequestHandler(
             dispatcher=dp,
             bot=bot,
             handle_http_errors=True, # Рекомендуется для обработки ошибок
         )
         webhook_requests_handler.register(web_app, path=WEBHOOK_PATH)
+        # --- Конец правильной настройки вебхука ---
 
         # Добавляем маршрут для cron-задачи
+        # [NEW] Add the cron job endpoint route
         web_app.add_routes([web.get('/run_daily_horoscopes', cron_job_handler)])
 
         setup_application(web_app, dp, bot=bot) # Дополнительная настройка (graceful shutdown)
