@@ -1,0 +1,7 @@
+aiogram
+python-dotenv
+motor
+pymongo
+Flask
+uvicorn
+fastapi
