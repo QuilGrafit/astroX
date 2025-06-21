@@ -4,5 +4,5 @@ uvicorn
 fastapi
 aiogram==3.10.0
 aiohttp==3.9.5
-motor==3.3.2
+motor
 python-dotenv==1.0.1
