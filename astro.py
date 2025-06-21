@@ -195,14 +195,13 @@ _user_data_cache = {} # Простой in-memory кэш для пользова�
 
 async def get_user_data(user_id: int):
     """Получает данные пользователя из MongoDB или из кэша."""
-    user_id_str = str(user_id) # MongoDB использует строки для _id
-    if users_collection:
-        user_data = await users_collection.find_one({"_id": user_id_str})
+    if users_collection is not None: # Corrected line
+        user_data = await users_collection.find_one({"_id": user_id})
         if user_data:
-            _user_data_cache[user_id_str] = user_data # Обновляем кэш из БД
+            _user_data_cache[user_id] = user_data # Обновляем кэш из БД
             return user_data
     # Если MongoDB не подключена или пользователь не найден в БД, ищем в кэше
-    return _user_data_cache.get(user_id_str, {"_id": user_id_str, "sign": "aries", "lang": "ru", "birth_date": None})
+    return _user_data_cache.get(user_id, {"_id": user_id, "sign": "aries", "lang": "ru", "birth_date": None})
 
 async def update_user_data(user_id: int, key: str, value):
     """Обновляет данные пользователя в MongoDB и в кэше."""
