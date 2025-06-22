@@ -14,6 +14,7 @@ import asyncio
 import re
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
+from fastapi import Request
 
 # --- ДОБАВЛЕНЫ НОВЫЕ ИМПОРТЫ ДЛЯ WEBHOOK И AIOHTTP ---
 from aiohttp import web
@@ -40,7 +41,8 @@ if not TON_WALLET:
 
 # --- НАСТРОЙКИ WEBHOOK ДЛЯ RENDER ---
 # WEBHOOK_HOST - это домен вашего сервиса Render (например, my-astro-bot.onrender.com)
-WEBHOOK_HOST = os.getenv('WEBHOOK_HOST')
+WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
+WEBHOOK_URL = f"{WEBHOOK_DOMAIN}{WEBHOOK_PATH}"
 # Render предоставляет порт через переменную окружения PORT
 WEB_SERVER_PORT = os.getenv('PORT', 8080)
 # Полный URL вебхука, который будет установлен в Telegram
@@ -934,6 +936,16 @@ async def on_startup(passed_bot: Bot) -> None:
             # Не фатально, если вебхук уже установлен или есть временные проблемы
     else:
         logger.error("WEBHOOK_HOST не установлен. Вебхук не будет настроен. Убедитесь, что переменная окружения WEBHOOK_HOST задана на Render.")
+
+@app.post(WEBHOOK_PATH)
+    async def bot_webhook(request: Request):
+    telegram_update = types.Update(**await request.json())
+    await dp.feed_update(bot=bot, update=telegram_update)
+    return {'ok': True}
+
+@app.get("/")
+async def root():
+    return {"message": "AstroX API is running"}
 
 
 # Закрытие соединения с БД при завершении работы бота
