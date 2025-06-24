@@ -36,6 +36,7 @@ MONGO_URI = os.getenv("MONGO_URI")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "AstroBotDB")
 MONGO_COLLECTION_NAME = os.getenv("MONGO_COLLECTION_NAME", "users")
 WEBHOOK_DOMAIN = "astrox-mfuk.onrender.com"
+WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "astrox-mfuk.onrender.com")
 
 # Проверка наличия обязательных переменных окружения
 if not TOKEN:
