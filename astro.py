@@ -16,6 +16,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 from fastapi import Request
 
+from fastapi import FastAPI
+
 # --- ДОБАВЛЕНЫ НОВЫЕ ИМПОРТЫ ДЛЯ WEBHOOK И AIOHTTP ---
 from aiohttp import web
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
@@ -24,6 +26,7 @@ from urllib.parse import urlparse
 
 # --- Загрузка переменных окружения для локальной разработки ---
 load_dotenv()
+app = FastAPI()
 
 # Настройки (теперь читаются из переменных окружения для Render)
 TOKEN = os.getenv("BOT_TOKEN")
