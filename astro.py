@@ -626,12 +626,12 @@ async def start(message: types.Message):
 
 
 @dp.message(F.text.in_({TEXTS["ru"]["main_menu_horoscope"]}))
-async def send_horoscope(message: types.Message):
+async def send_horoscope(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     user_data = await get_user_data(user_id)
     if not user_data.get("birth_date"):
         await message.answer("Для получения гороскопа, пожалуйста, сначала укажите вашу дату рождения в формате ДД.ММ.ГГГГ.")
-        await dp.get_current().fsm_context.set_state(Form.set_birth_date)
+        await state.set_state(Form.set_birth_date)
         return
 
     horoscope = await HoroscopeGenerator.generate(user_id)
