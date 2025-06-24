@@ -202,7 +202,7 @@ _user_data_cache = {} # Простой in-memory кэш для пользова�
 
 async def get_user_data(user_id: int):
     """Получает данные пользователя из MongoDB или из кэша."""
-    if users_collection is not None: # Corrected line
+    if users_collection:
         user_data = await users_collection.find_one({"_id": user_id})
         if user_data:
             _user_data_cache[user_id] = user_data # Обновляем кэш из БД
@@ -212,20 +212,19 @@ async def get_user_data(user_id: int):
 
 async def update_user_data(user_id: int, key: str, value):
     """Обновляет данные пользователя в MongoDB и в кэше."""
-    user_id_str = str(user_id)
     # Обновляем кэш
-    current_data = _user_data_cache.get(user_id_str, {"_id": user_id_str, "sign": "aries", "lang": "ru", "birth_date": None})
+    current_data = _user_data_cache.get(user_id, {"_id": user_id, "sign": "aries", "lang": "ru", "birth_date": None})
     current_data[key] = value
-    _user_data_cache[user_id_str] = current_data
+    _user_data_cache[user_id] = current_data
 
-    if users_collection is not None:
+    if users_collection:
         await users_collection.update_one(
-            {"_id": user_id_str},
+            {"_id": user_id},
             {"$set": {key: value}},
             upsert=True
         )
     else:
-        logger.warning(f"MongoDB коллекция не инициализирована, данные пользователя {user_id_str} будут сохранены только в памяти.")
+        logger.warning(f"MongoDB коллекция не инициализирована, данные пользователя {user_id} будут сохранены только в памяти.")
 
 
 # Функция get_text теперь должна быть асинхронной, чтобы получить язык пользователя
@@ -551,78 +550,17 @@ async def start(message: types.Message):
     user_id = message.from_user.id
     user_data = await get_user_data(user_id) 
 
-    # Если это новый пользователь или данные неполны, инициализируем
-    if not user_data.get("sign") or not user_data.get("lang") or not user_data.get("birth_date"):
+    if not user_data.get("sign") or not user_data.get("lang"):
         initial_lang = get_user_initial_language_code(message)
-        # Убедимся, что user_id хранится как строка, если это новый пользователь для MongoDB
-        user_id_str = str(user_id)
-        
-        # Создаем или обновляем запись пользователя
-        if users_collection:
-            # Проверяем наличие реферала, если команда /start с аргументом
-            referrer_id = None
-            if message.text and len(message.text.split()) > 1:
-                potential_referrer_id = message.text.split()[1]
-                if potential_referrer_id != user_id_str: # Чтобы пользователь не мог быть своим рефералом
-                    referrer_exists = await users_collection.find_one({"_id": potential_referrer_id})
-                    if referrer_exists:
-                        referrer_id = potential_referrer_id
-                        # Добавляем нового пользователя как реферала к рефереру
-                        await users_collection.update_one(
-                            {"_id": referrer_id},
-                            {"$addToSet": {"referrals": user_id_str}}
-                        )
-                        logger.info(f"Пользователь {user_id_str} пришел по реферальной ссылке {referrer_id}")
-                    else:
-                        logger.warning(f"Реферер {potential_referrer_id} не найден.")
-                else:
-                    logger.warning(f"Пользователь {user_id_str} попытался быть своим собственным рефералом.")
+        await update_user_data(user_id, "sign", user_data.get("sign", "aries"))
+        await update_user_data(user_id, "lang", initial_lang)
+        await update_user_data(user_id, "birth_date", user_data.get("birth_date", None))
 
-            await users_collection.update_one(
-                {"_id": user_id_str},
-                {"$setOnInsert": { # Устанавливаем только при первой вставке
-                    "username": message.from_user.username,
-                    "first_name": message.from_user.first_name,
-                    "last_name": message.from_user.last_name,
-                    "registration_date": datetime.now(),
-                    "balance": 0,
-                    "referrals": [],
-                    "referrer_id": referrer_id, # Устанавливаем реферера
-                    "sign": user_data.get("sign", "aries"), # Берем из кэша, если уже есть
-                    "lang": initial_lang,
-                    "birth_date": user_data.get("birth_date", None)
-                }},
-                upsert=True # Вставить, если не существует
-            )
-            # Если это новый пользователь, попросим дату рождения
-            if not user_data.get("birth_date"):
-                await message.answer(
-                    "Привет! Я Астро-бот. Отправь мне свою дату рождения в формате ДД.ММ.ГГГГ для получения гороскопа.",
-                    reply_markup=await Keyboard.main_menu(user_id)
-                )
-                await message.answer("Для удобства, пожалуйста, укажите вашу дату рождения. Введите ее в формате ДД.ММ.ГГГГ (например, 01.01.2000).")
-                await dp.get_current().fsm_context.set_state(Form.set_birth_date)
-            else:
-                await message.answer(
-                    await get_text_async(user_id, "welcome"),
-                    reply_markup=await Keyboard.main_menu(user_id),
-                    parse_mode="HTML"
-                )
-        else:
-            # Если MongoDB не подключена, просто отвечаем
-            await message.answer(
-                await get_text_async(user_id, "welcome"),
-                reply_markup=await Keyboard.main_menu(user_id),
-                parse_mode="HTML"
-            )
-            logger.warning(f"MongoDB не подключен. Функционал для пользователя {user_id} ограничен. Данные не сохраняются.")
-    else:
-        # Существующий пользователь
-        await message.answer(
-            await get_text_async(user_id, "welcome"),
-            reply_markup=await Keyboard.main_menu(user_id),
-            parse_mode="HTML"
-        )
+    await message.answer(
+        await get_text_async(user_id, "welcome"),
+        reply_markup=await Keyboard.main_menu(user_id),
+        parse_mode="HTML"
+    )
 
 
 @dp.message(F.text.in_({TEXTS["ru"]["main_menu_horoscope"]}))
@@ -870,13 +808,12 @@ async def show_ads(user_id: int):
 # Ежедневная рассылка гороскопов (логика)
 async def scheduled_tasks():
     logger.info("Запускаю запланированные задачи: отправка ежедневных гороскопов.")
+    # При использовании MemoryStorage для пользователей, рассылка всем пользователям невозможна,
+    # так как список пользователей не сохраняется.
     # Этот блок будет работать только если MONGO_URI задан и MongoDB подключена
     if users_collection:
-        users_cursor = users_collection.find({})
-        users_list = await users_cursor.to_list(length=None) # Получаем всех пользователей
-        
-        for user_doc in users_list:
-            user_id = int(user_doc["_id"]) # Конвертируем обратно в int для aiogram
+        async for user_doc in users_collection.find({}):
+            user_id = user_doc["_id"]
             try:
                 horoscope = await HoroscopeGenerator.generate(user_id)
                 
@@ -894,7 +831,6 @@ async def scheduled_tasks():
 
                 await bot.send_message(user_id, horoscope, parse_mode="HTML", reply_markup=bottom_buttons_builder.as_markup())
                 await show_ads(user_id)
-                await asyncio.sleep(0.1) # Небольшая задержка, чтобы не превышать лимиты Telegram API
             except Exception as e:
                 logger.error(f"Ошибка при отправке гороскопа пользователю {user_id}: {e}", exc_info=True)
     else:
