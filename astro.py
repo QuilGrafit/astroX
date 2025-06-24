@@ -35,6 +35,7 @@ ADSGRAM_API_KEY = os.getenv("ADSGRAM_API_KEY")
 MONGO_URI = os.getenv("MONGO_URI")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "AstroBotDB")
 MONGO_COLLECTION_NAME = os.getenv("MONGO_COLLECTION_NAME", "users")
+WEBHOOK_DOMAIN = os.getenv("WEBHOOK_HOST")
 
 # Проверка наличия обязательных переменных окружения
 if not TOKEN:
