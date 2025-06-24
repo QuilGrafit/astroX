@@ -218,7 +218,7 @@ async def update_user_data(user_id: int, key: str, value):
     current_data[key] = value
     _user_data_cache[user_id_str] = current_data
 
-    if users_collection:
+    if users_collection is not None:
         await users_collection.update_one(
             {"_id": user_id_str},
             {"$set": {key: value}},
