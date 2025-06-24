@@ -44,7 +44,7 @@ if not TON_WALLET:
 
 # --- НАСТРОЙКИ WEBHOOK ДЛЯ RENDER ---
 # WEBHOOK_HOST - это домен вашего сервиса Render (например, my-astro-bot.onrender.com)
-WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
+WEBHOOK_PATH = f"/webhook/{TOKEN}"
 WEBHOOK_URL = f"{WEBHOOK_DOMAIN}{WEBHOOK_PATH}"
 # Render предоставляет порт через переменную окружения PORT
 WEB_SERVER_PORT = os.getenv('PORT', 8080)
