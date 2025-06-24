@@ -938,7 +938,7 @@ async def on_startup(passed_bot: Bot) -> None:
         logger.error("WEBHOOK_HOST не установлен. Вебхук не будет настроен. Убедитесь, что переменная окружения WEBHOOK_HOST задана на Render.")
 
 @app.post(WEBHOOK_PATH)
-    async def bot_webhook(request: Request):
+async def bot_webhook(request: Request):
     telegram_update = types.Update(**await request.json())
     await dp.feed_update(bot=bot, update=telegram_update)
     return {'ok': True}
