@@ -601,7 +601,7 @@ async def start(message: types.Message):
                     reply_markup=await Keyboard.main_menu(user_id)
                 )
                 await message.answer("Для удобства, пожалуйста, укажите вашу дату рождения. Введите ее в формате ДД.ММ.ГГГГ (например, 01.01.2000).")
-                await dp.get_current().fsm_context.set_state(Form.set_birth_date)
+                await state.set_state(Form.set_birth_date)
             else:
                 await message.answer(
                     await get_text_async(user_id, "welcome"),
