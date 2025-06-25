@@ -547,9 +547,9 @@ def get_user_initial_language_code(message: types.Message) -> str:
 
 # Обработчики
 @dp.message(Command("start"))
-async def start(message: types.Message):
-    user_id = message.from_user.id
-    user_data = await get_user_data(user_id) 
+async def start(message: Message, state: FSMContext):  # Добавлен параметр state
+    await message.answer("Добро пожаловать! Я бот-астролог. Для начала, введите свою дату рождения в формате ДД.ММ.ГГГГ:")
+    await state.set_state(Form.set_birth_date)
 
     # Если это новый пользователь или данные неполны, инициализируем
     if not user_data.get("sign") or not user_data.get("lang") or not user_data.get("birth_date"):
